@@ -1,7 +1,6 @@
 "use client";
 
 import { AlertModal } from "@/components/modals/alert-modal";
-import { ApiAlert } from "@/components/ui/api-alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,6 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Heading } from "@/components/ui/heading";
+import ImageUpload from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useOrigin } from "@/hooks/use-origin";
@@ -44,8 +44,6 @@ const BillboardForm: React.FC<BillboardFormProps> = ({ initialdata }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const origin = useOrigin();
-
   const title = initialdata ? "Edit billboard" : "Create billboard";
   const description = initialdata ? "Edit a billboard" : "Add a new billboard";
   const toastMessage = initialdata ? "Billboard Updated" : "Billboard Created";
@@ -63,10 +61,18 @@ const BillboardForm: React.FC<BillboardFormProps> = ({ initialdata }) => {
     try {
       setLoading(true);
 
-      await axios.patch(`/api/stores/${params.storeId}`, data);
-      router.refresh();
+      if (initialdata) {
+        await axios.patch(
+          `/api/${params.storeId}/billboards/${params.billboardId}`,
+          data
+        );
+      } else {
+        await axios.post(`/api/${params.storeId}/billboards`, data);
+      }
 
-      toast.success("Store updated");
+      router.refresh();
+      router.push(`/${params.storeId}/billboards`);
+      toast.success(toastMessage);
     } catch (error) {
       toast.error("Something went wrong");
     } finally {
@@ -77,16 +83,16 @@ const BillboardForm: React.FC<BillboardFormProps> = ({ initialdata }) => {
   const onDelete = async () => {
     try {
       setLoading(true);
-      await axios.delete(`/api/stores/${params.storeId}`);
+      await axios.delete(
+        `/api/${params.storeId}/billboards/${params.billboardId}`
+      );
 
       router.refresh();
       router.push("/");
 
-      toast.success("Store deleted succesfully");
+      toast.success("Billboard deleted succesfully");
     } catch (error) {
-      toast.error(
-        "Make Sure to Delete all products and categories before deleting Store"
-      );
+      toast.error("Make Sure to removed all categories using this Billboard");
     } finally {
       setLoading(false);
     }
@@ -122,6 +128,26 @@ const BillboardForm: React.FC<BillboardFormProps> = ({ initialdata }) => {
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-8 w-full"
         >
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Background Image</FormLabel>
+                <FormControl>
+                  <ImageUpload
+                    value={field.value ? [field.value] : []}
+                    disabled={loading}
+                    onChange={(url) => {
+                      field.onChange(url);
+                    }}
+                    onRemove={() => field.onChange("")}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className="grid grid-cols-3 gap-8">
             <FormField
               control={form.control}
